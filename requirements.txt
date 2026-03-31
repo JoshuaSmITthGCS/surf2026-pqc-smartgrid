@@ -1,0 +1,16 @@
+numpy>=1.26
+pandas>=2.0
+matplotlib>=3.8
+scipy>=1.11
+jupyterlab>=4.0
+ipykernel>=6.0
+pycryptodome>=3.20
+tenseal>=0.3.14
+qiskit>=1.0
+qiskit-aer>=0.14
+plotly>=5.18
+tqdm>=4.66
+psutil>=5.9
+memory-profiler>=0.61
+rich>=13.0
+openpyxl>=3.1

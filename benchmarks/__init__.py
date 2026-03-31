@@ -1,1 +1,8 @@
-"""Benchmark harness package for SURF 2026."""
+"""Benchmark harness exports."""
+
+from .runner import BenchmarkRecord, BenchmarkRunner
+
+__all__ = [
+    "BenchmarkRecord",
+    "BenchmarkRunner",
+]

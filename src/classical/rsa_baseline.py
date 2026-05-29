@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Callable
 
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.Hash import SHA256
@@ -15,6 +16,7 @@ from benchmarks.runner import BenchmarkRecord, BenchmarkRunner
 DEFAULT_RSA_KEY_SIZES = (2048, 4096)
 DEFAULT_RSA_PAYLOAD_SIZES = (64, 128, 256)
 DEFAULT_RSA_HASH = SHA256
+PayloadFactory = Callable[[int], bytes]
 
 
 def generate_rsa_keypair(key_bits: int) -> RSA.RsaKey:
@@ -46,6 +48,20 @@ def decrypt_rsa(private_key: RSA.RsaKey, ciphertext: bytes, *, hash_module=DEFAU
     return cipher.decrypt(ciphertext)
 
 
+def _payload_for_size(payload_bytes: int, payload_factory: PayloadFactory | None) -> bytes:
+    plaintext = (
+        bytes(payload_factory(payload_bytes))
+        if payload_factory is not None
+        else get_random_bytes(payload_bytes)
+    )
+    if len(plaintext) != payload_bytes:
+        raise ValueError(
+            "payload_factory must return exactly "
+            f"{payload_bytes} bytes, got {len(plaintext)}"
+        )
+    return plaintext
+
+
 def benchmark_rsa_baselines(
     runner: BenchmarkRunner | None = None,
     *,
@@ -53,6 +69,7 @@ def benchmark_rsa_baselines(
     warmup: int = 2,
     payload_sizes: tuple[int, ...] = DEFAULT_RSA_PAYLOAD_SIZES,
     key_sizes: tuple[int, ...] = DEFAULT_RSA_KEY_SIZES,
+    payload_factory: PayloadFactory | None = None,
     export_path: str | Path = "rsa_baseline.csv",
     console: Console | None = None,
 ) -> list[BenchmarkRecord]:
@@ -63,6 +80,10 @@ def benchmark_rsa_baselines(
     RSA-2048 supports up to 190 bytes and RSA-4096 supports up to 446 bytes.
     That means the requested 256-byte test case is valid for RSA-4096 but not
     for RSA-2048, so the latter is skipped and reported to the console.
+
+    ``payload_factory`` can be provided to benchmark deterministic real-data
+    payloads instead of random bytes. It must return exactly the requested
+    number of bytes.
     """
 
     runner = runner or BenchmarkRunner()
@@ -83,7 +104,7 @@ def benchmark_rsa_baselines(
                 )
                 continue
 
-            plaintext = get_random_bytes(payload_bytes)
+            plaintext = _payload_for_size(payload_bytes, payload_factory)
 
             encrypt_record = runner.benchmark(
                 lambda key=public_key, data=plaintext: encrypt_rsa(key, data),

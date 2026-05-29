@@ -13,5 +13,6 @@ dist/
 .DS_Store
 *.log
 *.csv
+!data/smart_grid_dataset.csv
 !benchmarks/results/workstation/.gitkeep
 !benchmarks/results/pi/.gitkeep

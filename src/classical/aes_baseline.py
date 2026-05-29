@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Callable, Literal
 
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
@@ -15,6 +15,7 @@ from benchmarks.runner import BenchmarkRecord, BenchmarkRunner
 AESMode = Literal["CBC", "GCM"]
 DEFAULT_AES_KEY_SIZES = (128, 256)
 DEFAULT_AES_PAYLOAD_SIZES = (64, 512, 1024, 65536)
+PayloadFactory = Callable[[int], bytes]
 
 
 @dataclass(slots=True, frozen=True)
@@ -91,6 +92,20 @@ def decrypt_aes(key: bytes, bundle: AESCiphertext) -> bytes:
     raise ValueError(f"Unsupported AES mode: {bundle.mode}")
 
 
+def _payload_for_size(payload_bytes: int, payload_factory: PayloadFactory | None) -> bytes:
+    plaintext = (
+        bytes(payload_factory(payload_bytes))
+        if payload_factory is not None
+        else get_random_bytes(payload_bytes)
+    )
+    if len(plaintext) != payload_bytes:
+        raise ValueError(
+            "payload_factory must return exactly "
+            f"{payload_bytes} bytes, got {len(plaintext)}"
+        )
+    return plaintext
+
+
 def benchmark_aes_baselines(
     runner: BenchmarkRunner | None = None,
     *,
@@ -98,9 +113,15 @@ def benchmark_aes_baselines(
     warmup: int = 3,
     payload_sizes: tuple[int, ...] = DEFAULT_AES_PAYLOAD_SIZES,
     key_sizes: tuple[int, ...] = DEFAULT_AES_KEY_SIZES,
+    payload_factory: PayloadFactory | None = None,
     export_path: str | Path = "aes_baseline.csv",
 ) -> list[BenchmarkRecord]:
-    """Benchmark AES encryption and decryption across key sizes and modes."""
+    """Benchmark AES encryption and decryption across key sizes and modes.
+
+    ``payload_factory`` can be provided to benchmark deterministic real-data
+    payloads instead of random bytes. It must return exactly the requested
+    number of bytes.
+    """
 
     runner = runner or BenchmarkRunner()
     records: list[BenchmarkRecord] = []
@@ -109,7 +130,7 @@ def benchmark_aes_baselines(
         key = generate_aes_key(key_bits)
         for mode in ("CBC", "GCM"):
             for payload_bytes in payload_sizes:
-                plaintext = get_random_bytes(payload_bytes)
+                plaintext = _payload_for_size(payload_bytes, payload_factory)
 
                 encrypt_record = runner.benchmark(
                     lambda key=key, data=plaintext, mode=mode: encrypt_aes(key, data, mode),

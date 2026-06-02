@@ -16,3 +16,7 @@ dist/
 !data/smart_grid_dataset.csv
 !benchmarks/results/workstation/.gitkeep
 !benchmarks/results/pi/.gitkeep
+
+# Generated meeting deck (rebuild with scripts/build_meeting_deck.py)
+he_smartgrid_meeting.pptx
+*.pptx

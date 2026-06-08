@@ -24,13 +24,18 @@ ML-DSA, Falcon, or SPHINCS+ already exist here.
 
 Current Phase 1 research scope:
 
-- Compare homomorphic encryption techniques against one classical encryption
-  baseline.
-- Use AES-GCM as the classical encryption baseline unless the user or mentor
-  changes that choice.
-- Treat RSA as setup/reference code only for this phase; do not frame it as the
-  main baseline against BFV or CKKS.
-- Prioritize BFV and CKKS as the first two HE baselines.
+- Compare homomorphic encryption schemes head-to-head against the Paillier (PHE)
+  baseline. Per Dr. Baza's Meeting 2 feedback (see the
+  `SURF2026_Meeting_Baza_2` slides and `docs/HE_BASELINE_MEETING_NOTES.md`), the
+  comparison baseline must be a homomorphic scheme, not RSA.
+- Use Paillier (PHE), via the `phe` library, as the single comparison baseline.
+  It is the classic prior-generation smart-metering aggregation scheme
+  (additively homomorphic, DCR hardness, broken by Shor).
+- Prioritize BFV and CKKS as the first two RLWE HE schemes; plan BGV
+  (`python-seal`/OpenFHE) as the Week 3-4 third scheme for the depth >= 2
+  demand-response pipeline.
+- Treat AES-GCM and RSA as context-only references for this phase; do not frame
+  either as the active comparison baseline against the HE schemes.
 
 ## Key Files
 
@@ -41,6 +46,10 @@ Current Phase 1 research scope:
   - AES-CBC and AES-GCM helpers and benchmark wrapper
 - `src/classical/rsa_baseline.py`
   - RSA-OAEP baseline and OAEP payload-size checks
+- `src/fhe/paillier_scheme.py`
+  - Paillier (PHE) baseline: keygen/encrypt/decrypt/add/mul_plain helpers,
+    encrypted meter-sum demo, ciphertext-expansion helper, benchmark wrapper
+  - depends only on `phe`; the `src/fhe` package imports it without TenSEAL
 - `src/fhe/bfv_scheme.py`
   - BFV helpers, encrypted sum demo, benchmark wrapper
 - `src/fhe/ckks_scheme.py`
@@ -57,6 +66,9 @@ Current Phase 1 research scope:
   - dataset-aware AES and RSA validation notebook
 - `scripts/week1_smoke_test.py`
   - import, dataset, and quick RSA-2048 benchmark smoke test
+- `scripts/run_he_baseline_comparison.py`
+  - one-command Phase 1 runner: always benchmarks the Paillier baseline, adds
+    BFV and CKKS automatically when TenSEAL is installed
 
 ## Working Conventions
 
@@ -85,8 +97,11 @@ Current Phase 1 research scope:
     attack.
 - Do not call BFV or CKKS "post-quantum replacements" for RSA/AES. They serve a
   different purpose.
-- Do not use RSA as the active Phase 1 comparison baseline against homomorphic
-  encryption; AES-GCM is the intended single classical baseline.
+- The active Phase 1 comparison baseline is Paillier (PHE). Do not use RSA or
+  AES-GCM as the head-to-head baseline against the HE schemes; they are
+  context-only references now.
+- Do not describe Paillier as post-quantum secure. Its DCR hardness is broken by
+  Shor; that contrast with the RLWE schemes (BFV/CKKS/BGV) is a key point.
 - Be explicit that the smart-grid framing is currently modeled through a real
   telemetry CSV, telemetry-derived payloads, payload sizes, and encrypted
   aggregation patterns, not a full simulator.
@@ -127,6 +142,14 @@ runner = BenchmarkRunner()
 benchmark_aes_baselines(runner, trials=10, payload_sizes=(64,), key_sizes=(128,), export_path="claude_aes.csv")
 benchmark_rsa_baselines(runner, trials=10, payload_sizes=(64,), key_sizes=(2048,), export_path="claude_rsa.csv")
 PY
+```
+
+Run the Phase 1 HE baseline comparison (Paillier baseline; adds BFV/CKKS when
+TenSEAL is installed):
+
+```bash
+python scripts/run_he_baseline_comparison.py --quick
+python scripts/run_he_baseline_comparison.py --trials 50
 ```
 
 Run quantum demos:

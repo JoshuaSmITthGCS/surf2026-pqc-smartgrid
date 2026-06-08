@@ -24,9 +24,10 @@ What is implemented now:
   - AES-CBC
   - AES-GCM
   - RSA-OAEP with SHA-256
-- Fully homomorphic / leveled homomorphic experiments with TenSEAL:
-  - BFV for integer vectors
-  - CKKS for approximate floating-point vectors
+- Homomorphic encryption schemes:
+  - Paillier (PHE) with `phe`, the additively-homomorphic comparison baseline
+  - BFV for integer vectors with TenSEAL
+  - CKKS for approximate floating-point vectors with TenSEAL
 - Educational quantum-risk demonstrations with Qiskit:
   - Grover search on toy key spaces
   - Scaled Shor-style period estimation for small composite numbers
@@ -38,13 +39,18 @@ What is implemented now:
 
 Current Phase 1 research focus:
 
-- Compare at least two homomorphic encryption techniques against one classical
-  encryption baseline.
+- Run a head-to-head comparison of homomorphic encryption schemes against the
+  Paillier (PHE) baseline. This follows Dr. Baza's Meeting 2 feedback: the
+  comparison baseline must be a homomorphic scheme (the classic smart-metering
+  prior art), not RSA.
+- Use Paillier (PHE) as the single comparison baseline. It is additively
+  homomorphic (unlimited adds, zero ciphertext-ciphertext multiplies) and rests
+  on the DCR assumption, which is broken by Shor's algorithm.
 - Use BFV for exact integer smart-grid aggregation.
 - Use CKKS for approximate real-valued telemetry analytics.
-- Use AES-GCM as the single classical encryption baseline.
-- Keep RSA as reference/setup code only; it is not the main comparison for
-  encrypted computation.
+- Plan BGV (depth >= 2 demand-response pipeline) as the Week 3-4 third scheme.
+- Keep AES-GCM and RSA as context-only references; they are not the active
+  comparison baseline for encrypted computation.
 
 What is not yet implemented:
 
@@ -121,6 +127,7 @@ surf2026-pqc-smartgrid/
 │   │   └── rsa_baseline.py
 │   ├── fhe/
 │   │   ├── __init__.py
+│   │   ├── paillier_scheme.py
 │   │   ├── bfv_scheme.py
 │   │   └── ckks_scheme.py
 │   ├── quantum/
@@ -132,6 +139,7 @@ surf2026-pqc-smartgrid/
 │       └── workloads.py
 ├── scripts/
 │   ├── convert_to_obsidian.py
+│   ├── run_he_baseline_comparison.py
 │   └── week1_smoke_test.py
 ├── requirements.txt
 └── README.md
@@ -155,7 +163,12 @@ surf2026-pqc-smartgrid/
 - These are the main "conventional crypto" references for later comparisons.
 
 `src/fhe/`
-- TenSEAL-backed BFV and CKKS helpers.
+- Homomorphic encryption helpers and benchmark wrappers.
+- `paillier_scheme.py` is the additively-homomorphic Paillier (PHE) baseline and
+  depends only on `phe`; it imports without TenSEAL so it can run on
+  constrained, TenSEAL-free environments.
+- `bfv_scheme.py` and `ckks_scheme.py` are TenSEAL-backed and load only when
+  TenSEAL is installed.
 - Includes both small smart-grid-style demos and benchmark wrappers.
 
 `src/quantum/`
@@ -226,8 +239,8 @@ Every benchmark export uses the same columns:
 
 | Column | Meaning |
 | --- | --- |
-| `scheme` | High-level family such as `AES`, `RSA`, `BFV`, or `CKKS` |
-| `mode` | Variant or parameter label such as `CBC`, `GCM`, `OAEP-SHA256`, `poly-4096`, or `balanced-8192` |
+| `scheme` | High-level family such as `Paillier`, `AES`, `RSA`, `BFV`, or `CKKS` |
+| `mode` | Variant or parameter label such as `PHE-2048`, `CBC`, `GCM`, `OAEP-SHA256`, `poly-4096`, or `balanced-8192` |
 | `key_size` | Key size or analogous parameter, such as AES key bits or polynomial modulus degree |
 | `payload_bytes` | Approximate plaintext payload size represented by the benchmark |
 | `device` | Hostname and machine metadata captured at runtime |
@@ -284,6 +297,28 @@ The OAEP size check is important because it prevents invalid benchmark rows
 from being recorded for unsupported payload/key combinations.
 
 ### Homomorphic Encryption
+
+#### `src/fhe/paillier_scheme.py`
+
+This module provides the Paillier (PHE) baseline, the head-to-head comparison
+point for the BFV and CKKS experiments per Dr. Baza's Meeting 2 feedback.
+
+Key characteristics:
+
+- uses the pure-Python `phe` library (no TenSEAL dependency)
+- default key sizes: `2048`, `3072`
+- benchmarks `keygen`, `encrypt`, `decrypt`, `add` (ciphertext + ciphertext),
+  and `mul_plain` (ciphertext * plaintext scalar)
+- `keygen` is timed with its own smaller trial count because it dominates cost
+- includes `encrypted_sum_demo()` for encrypted meter-reading aggregation
+- includes `ciphertext_expansion()` to report ciphertext size and the
+  ciphertext/plaintext expansion ratio (the Meeting 2 communication metric)
+
+Paillier supports unlimited homomorphic additions but no ciphertext-ciphertext
+multiplication, and encrypts one value per ciphertext (no SIMD batching). Its
+DCR hardness is broken by Shor, which is the deliberate contrast with the
+RLWE-based BFV/CKKS/BGV schemes. It should not be described as post-quantum
+secure.
 
 #### `src/fhe/bfv_scheme.py`
 
@@ -497,6 +532,38 @@ benchmark_ckks_schemes(
     trials=3,
     configs=(DEFAULT_CKKS_CONFIGS[0],),
     export_path="quick_ckks_check.csv",
+)
+PY
+```
+
+### Run the Phase 1 HE baseline comparison
+
+This is the single command for the Phase 1 experiment. It always benchmarks the
+Paillier (PHE) baseline, and automatically adds BFV and CKKS when TenSEAL is
+installed. Results are exported under `benchmarks/results/workstation/`.
+
+```bash
+# Fast smoke run (small trial counts)
+python scripts/run_he_baseline_comparison.py --quick
+
+# Full run
+python scripts/run_he_baseline_comparison.py --trials 50
+```
+
+### Quick Paillier baseline benchmark
+
+```bash
+python - <<'PY'
+from benchmarks.runner import BenchmarkRunner
+from src.fhe.paillier_scheme import benchmark_paillier_baseline
+
+runner = BenchmarkRunner()
+benchmark_paillier_baseline(
+    runner,
+    trials=10,
+    keygen_trials=2,
+    key_sizes=(2048,),
+    export_path="quick_paillier_check.csv",
 )
 PY
 ```

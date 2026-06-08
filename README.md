@@ -136,6 +136,7 @@ surf2026-pqc-smartgrid/
 │       └── shor_attack.py
 │   └── smartgrid/
 │       ├── __init__.py
+│       ├── london_meters.py
 │       └── workloads.py
 ├── scripts/
 │   ├── convert_to_obsidian.py
@@ -178,8 +179,13 @@ surf2026-pqc-smartgrid/
 
 `src/smartgrid/`
 - Real dataset loading, quality summaries, and deterministic payload builders.
-- `workloads.py` validates the telemetry CSV and converts rows into exact-size
-  byte payloads for reproducible AES/RSA benchmarks.
+- `workloads.py` validates the single-feed telemetry CSV (`smart_grid_dataset.csv`)
+  and converts rows into exact-size byte payloads for reproducible AES/RSA
+  benchmarks.
+- `london_meters.py` loads the multi-household Smart Meters in London dataset
+  (half-hourly per-meter kWh) into a `timestamp x meter` matrix and produces
+  per-meter reading vectors (scaled integers for Paillier/BFV, floats for CKKS)
+  for the encrypted-aggregation use case. It is independent of `workloads.py`.
 
 `notebooks/`
 - Contains `week1_validation.ipynb`, a small notebook that validates the real
@@ -548,6 +554,27 @@ python scripts/run_he_baseline_comparison.py --quick
 
 # Full run
 python scripts/run_he_baseline_comparison.py --trials 50
+```
+
+By default the schemes use small built-in sample vectors. To drive the readings
+from the real multi-household **Smart Meters in London** dataset
+(`jeanmidev/smart-meters-in-london`), first download it with `kagglehub` (needs a
+Kaggle API token at `~/.kaggle/kaggle.json`):
+
+```python
+import kagglehub
+path = kagglehub.dataset_download("jeanmidev/smart-meters-in-london")
+print("Path to dataset files:", path)
+```
+
+Then pass that path. The runner builds a `timestamp x meter` matrix, feeds a real
+per-meter reading vector into Paillier/BFV (scaled integer Wh) and CKKS (kWh
+floats), and runs an encrypted multi-meter aggregation correctness check:
+
+```bash
+python scripts/run_he_baseline_comparison.py \
+    --london-path "$HOME/.cache/kagglehub/datasets/jeanmidev/smart-meters-in-london/versions/<N>" \
+    --meters 20 --blocks 0
 ```
 
 ### Quick Paillier baseline benchmark

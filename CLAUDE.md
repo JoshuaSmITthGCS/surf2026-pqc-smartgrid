@@ -59,9 +59,16 @@ Current Phase 1 research scope:
 - `src/quantum/shor_attack.py`
   - scaled educational Shor demos
 - `src/smartgrid/workloads.py`
-  - validates `data/smart_grid_dataset.csv`
+  - validates `data/smart_grid_dataset.csv` (single-feed telemetry)
   - summarizes dataset quality and coverage
   - builds exact-size telemetry-derived payload bytes for benchmarks
+- `src/smartgrid/london_meters.py`
+  - loads the multi-household Smart Meters in London dataset
+    (`jeanmidev/smart-meters-in-london`, half-hourly per-meter kWh)
+  - builds a `timestamp x meter` matrix and per-meter reading vectors
+    (scaled integers for Paillier/BFV, floats for CKKS)
+  - independent of `workloads.py`; used by the HE comparison runner via
+    `--london-path`
 - `notebooks/week1_validation.ipynb`
   - dataset-aware AES and RSA validation notebook
 - `scripts/week1_smoke_test.py`

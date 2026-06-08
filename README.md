@@ -556,25 +556,36 @@ python scripts/run_he_baseline_comparison.py --quick
 python scripts/run_he_baseline_comparison.py --trials 50
 ```
 
-By default the schemes use small built-in sample vectors. To drive the readings
-from the real multi-household **Smart Meters in London** dataset
-(`jeanmidev/smart-meters-in-london`), first download it with `kagglehub` (needs a
-Kaggle API token at `~/.kaggle/kaggle.json`):
+To drive the readings from the real multi-household **Smart Meters in London**
+dataset (`jeanmidev/smart-meters-in-london`), place the extracted dataset at
+`data/smart-meters-in-london/`. The runner uses that location automatically (it
+is the default `--london-path`), so the commands above then benchmark on real
+meters with no extra flags. If the folder is absent, the runner falls back to
+small built-in sample vectors.
+
+Download it either by extracting the Kaggle zip into that folder, e.g.:
+
+```bash
+# after extracting the Kaggle download (default name "archive (1)")
+mv "archive (1)" data/smart-meters-in-london
+```
+
+or with `kagglehub` (needs a Kaggle API token at `~/.kaggle/kaggle.json`):
 
 ```python
 import kagglehub
 path = kagglehub.dataset_download("jeanmidev/smart-meters-in-london")
-print("Path to dataset files:", path)
+print("Path to dataset files:", path)  # then point --london-path at this
 ```
 
-Then pass that path. The runner builds a `timestamp x meter` matrix, feeds a real
-per-meter reading vector into Paillier/BFV (scaled integer Wh) and CKKS (kWh
-floats), and runs an encrypted multi-meter aggregation correctness check:
+The raw dataset is hundreds of MB and is gitignored on purpose -- it stays
+local and is never committed. The runner builds a `timestamp x meter` matrix,
+feeds a real per-meter reading vector into Paillier/BFV (scaled integer Wh) and
+CKKS (kWh floats), and runs an encrypted multi-meter aggregation correctness
+check. Control the slice with `--meters`, `--blocks`, and `--row`:
 
 ```bash
-python scripts/run_he_baseline_comparison.py \
-    --london-path "$HOME/.cache/kagglehub/datasets/jeanmidev/smart-meters-in-london/versions/<N>" \
-    --meters 20 --blocks 0
+python scripts/run_he_baseline_comparison.py --meters 20 --blocks 0
 ```
 
 ### Quick Paillier baseline benchmark

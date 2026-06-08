@@ -50,15 +50,30 @@ def _load_london_readings(args, console):
 
     from src.smartgrid import london_meters
 
+    root = Path(args.london_path)
+    if not root.exists():
+        console.print(
+            f"[yellow]London dataset not found at {root} -- using built-in "
+            "sample vectors. Place the extracted dataset there (or pass "
+            "--london-path) to benchmark on real meters.[/yellow]"
+        )
+        return None
+
     blocks = tuple(int(b) for b in args.blocks.split(",") if b.strip())
-    matrix = london_meters.build_meter_matrix(
-        args.london_path,
-        blocks=blocks,
-        max_meters=args.meters,
-    )
-    summary = london_meters.summarize_meter_matrix(
-        matrix, root=args.london_path, blocks=blocks
-    )
+    try:
+        matrix = london_meters.build_meter_matrix(
+            root,
+            blocks=blocks,
+            max_meters=args.meters,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        console.print(
+            f"[yellow]Could not load London dataset ({exc}) -- using built-in "
+            "sample vectors.[/yellow]"
+        )
+        return None
+
+    summary = london_meters.summarize_meter_matrix(matrix, root=root, blocks=blocks)
     console.print(
         f"[cyan]Smart Meters in London[/cyan]: {summary.meters} meters x "
         f"{summary.timesteps} timesteps  (blocks {summary.blocks}, "
@@ -138,10 +153,12 @@ def main() -> int:
     parser.add_argument(
         "--london-path",
         type=str,
-        default=None,
+        default=str(PROJECT_ROOT / "data" / "smart-meters-in-london"),
         help=(
-            "Path to the Smart Meters in London dataset (the path returned by "
-            "kagglehub.dataset_download). Drives readings from real data."
+            "Path to the Smart Meters in London dataset. Defaults to "
+            "data/smart-meters-in-london; if that folder is absent the runner "
+            "falls back to built-in sample vectors. Pass an empty string to "
+            "force the built-in vectors."
         ),
     )
     parser.add_argument(

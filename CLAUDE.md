@@ -159,6 +159,14 @@ python scripts/run_he_baseline_comparison.py --quick
 python scripts/run_he_baseline_comparison.py --trials 50
 ```
 
+One-command bootstrap (pull from origin, download the Smart Meters in London
+dataset via kagglehub, then run the comparison):
+
+```bash
+python scripts/setup_and_run.py --quick
+python scripts/setup_and_run.py --install --meters 50 --blocks 0,1
+```
+
 Run quantum demos:
 
 ```bash

@@ -141,6 +141,7 @@ surf2026-pqc-smartgrid/
 ├── scripts/
 │   ├── convert_to_obsidian.py
 │   ├── run_he_baseline_comparison.py
+│   ├── setup_and_run.py
 │   └── week1_smoke_test.py
 ├── requirements.txt
 └── README.md
@@ -457,6 +458,24 @@ Notes:
 ## Running The Code
 
 All commands below assume you are in the repository root.
+
+### One-command setup and run
+
+`scripts/setup_and_run.py` pulls the latest code for the working branch from
+origin, downloads the Smart Meters in London dataset into
+`data/smart-meters-in-london` (via `kagglehub`, if not already present), and
+starts the HE baseline comparison on it:
+
+```bash
+python scripts/setup_and_run.py            # pull, download, full run
+python scripts/setup_and_run.py --quick    # fast smoke run
+python scripts/setup_and_run.py --install --meters 50 --blocks 0,1
+```
+
+It needs a Kaggle API token at `~/.kaggle/kaggle.json` for the download step.
+Use `--skip-pull` / `--skip-download` to bypass either stage, and `--install` to
+`pip install -r requirements.txt` first. The `--quick`, `--trials`, `--meters`,
+`--blocks`, and `--row` flags are forwarded to the comparison runner.
 
 ### Open the notebook
 

@@ -24,9 +24,10 @@ What is implemented now:
   - AES-CBC
   - AES-GCM
   - RSA-OAEP with SHA-256
-- Fully homomorphic / leveled homomorphic experiments with TenSEAL:
-  - BFV for integer vectors
-  - CKKS for approximate floating-point vectors
+- Homomorphic encryption schemes:
+  - Paillier (PHE) with `phe`, the additively-homomorphic comparison baseline
+  - BFV for integer vectors with TenSEAL
+  - CKKS for approximate floating-point vectors with TenSEAL
 - Educational quantum-risk demonstrations with Qiskit:
   - Grover search on toy key spaces
   - Scaled Shor-style period estimation for small composite numbers
@@ -38,13 +39,18 @@ What is implemented now:
 
 Current Phase 1 research focus:
 
-- Compare at least two homomorphic encryption techniques against one classical
-  encryption baseline.
+- Run a head-to-head comparison of homomorphic encryption schemes against the
+  Paillier (PHE) baseline. This follows Dr. Baza's Meeting 2 feedback: the
+  comparison baseline must be a homomorphic scheme (the classic smart-metering
+  prior art), not RSA.
+- Use Paillier (PHE) as the single comparison baseline. It is additively
+  homomorphic (unlimited adds, zero ciphertext-ciphertext multiplies) and rests
+  on the DCR assumption, which is broken by Shor's algorithm.
 - Use BFV for exact integer smart-grid aggregation.
 - Use CKKS for approximate real-valued telemetry analytics.
-- Use AES-GCM as the single classical encryption baseline.
-- Keep RSA as reference/setup code only; it is not the main comparison for
-  encrypted computation.
+- Plan BGV (depth >= 2 demand-response pipeline) as the Week 3-4 third scheme.
+- Keep AES-GCM and RSA as context-only references; they are not the active
+  comparison baseline for encrypted computation.
 
 What is not yet implemented:
 
@@ -121,6 +127,7 @@ surf2026-pqc-smartgrid/
 │   │   └── rsa_baseline.py
 │   ├── fhe/
 │   │   ├── __init__.py
+│   │   ├── paillier_scheme.py
 │   │   ├── bfv_scheme.py
 │   │   └── ckks_scheme.py
 │   ├── quantum/
@@ -129,9 +136,12 @@ surf2026-pqc-smartgrid/
 │       └── shor_attack.py
 │   └── smartgrid/
 │       ├── __init__.py
+│       ├── london_meters.py
 │       └── workloads.py
 ├── scripts/
 │   ├── convert_to_obsidian.py
+│   ├── run_he_baseline_comparison.py
+│   ├── setup_and_run.py
 │   └── week1_smoke_test.py
 ├── requirements.txt
 └── README.md
@@ -155,7 +165,12 @@ surf2026-pqc-smartgrid/
 - These are the main "conventional crypto" references for later comparisons.
 
 `src/fhe/`
-- TenSEAL-backed BFV and CKKS helpers.
+- Homomorphic encryption helpers and benchmark wrappers.
+- `paillier_scheme.py` is the additively-homomorphic Paillier (PHE) baseline and
+  depends only on `phe`; it imports without TenSEAL so it can run on
+  constrained, TenSEAL-free environments.
+- `bfv_scheme.py` and `ckks_scheme.py` are TenSEAL-backed and load only when
+  TenSEAL is installed.
 - Includes both small smart-grid-style demos and benchmark wrappers.
 
 `src/quantum/`
@@ -165,8 +180,13 @@ surf2026-pqc-smartgrid/
 
 `src/smartgrid/`
 - Real dataset loading, quality summaries, and deterministic payload builders.
-- `workloads.py` validates the telemetry CSV and converts rows into exact-size
-  byte payloads for reproducible AES/RSA benchmarks.
+- `workloads.py` validates the single-feed telemetry CSV (`smart_grid_dataset.csv`)
+  and converts rows into exact-size byte payloads for reproducible AES/RSA
+  benchmarks.
+- `london_meters.py` loads the multi-household Smart Meters in London dataset
+  (half-hourly per-meter kWh) into a `timestamp x meter` matrix and produces
+  per-meter reading vectors (scaled integers for Paillier/BFV, floats for CKKS)
+  for the encrypted-aggregation use case. It is independent of `workloads.py`.
 
 `notebooks/`
 - Contains `week1_validation.ipynb`, a small notebook that validates the real
@@ -226,8 +246,8 @@ Every benchmark export uses the same columns:
 
 | Column | Meaning |
 | --- | --- |
-| `scheme` | High-level family such as `AES`, `RSA`, `BFV`, or `CKKS` |
-| `mode` | Variant or parameter label such as `CBC`, `GCM`, `OAEP-SHA256`, `poly-4096`, or `balanced-8192` |
+| `scheme` | High-level family such as `Paillier`, `AES`, `RSA`, `BFV`, or `CKKS` |
+| `mode` | Variant or parameter label such as `PHE-2048`, `CBC`, `GCM`, `OAEP-SHA256`, `poly-4096`, or `balanced-8192` |
 | `key_size` | Key size or analogous parameter, such as AES key bits or polynomial modulus degree |
 | `payload_bytes` | Approximate plaintext payload size represented by the benchmark |
 | `device` | Hostname and machine metadata captured at runtime |
@@ -284,6 +304,28 @@ The OAEP size check is important because it prevents invalid benchmark rows
 from being recorded for unsupported payload/key combinations.
 
 ### Homomorphic Encryption
+
+#### `src/fhe/paillier_scheme.py`
+
+This module provides the Paillier (PHE) baseline, the head-to-head comparison
+point for the BFV and CKKS experiments per Dr. Baza's Meeting 2 feedback.
+
+Key characteristics:
+
+- uses the pure-Python `phe` library (no TenSEAL dependency)
+- default key sizes: `2048`, `3072`
+- benchmarks `keygen`, `encrypt`, `decrypt`, `add` (ciphertext + ciphertext),
+  and `mul_plain` (ciphertext * plaintext scalar)
+- `keygen` is timed with its own smaller trial count because it dominates cost
+- includes `encrypted_sum_demo()` for encrypted meter-reading aggregation
+- includes `ciphertext_expansion()` to report ciphertext size and the
+  ciphertext/plaintext expansion ratio (the Meeting 2 communication metric)
+
+Paillier supports unlimited homomorphic additions but no ciphertext-ciphertext
+multiplication, and encrypts one value per ciphertext (no SIMD batching). Its
+DCR hardness is broken by Shor, which is the deliberate contrast with the
+RLWE-based BFV/CKKS/BGV schemes. It should not be described as post-quantum
+secure.
 
 #### `src/fhe/bfv_scheme.py`
 
@@ -417,6 +459,24 @@ Notes:
 
 All commands below assume you are in the repository root.
 
+### One-command setup and run
+
+`scripts/setup_and_run.py` pulls the latest code for the working branch from
+origin, downloads the Smart Meters in London dataset into
+`data/smart-meters-in-london` (via `kagglehub`, if not already present), and
+starts the HE baseline comparison on it:
+
+```bash
+python scripts/setup_and_run.py            # pull, download, full run
+python scripts/setup_and_run.py --quick    # fast smoke run
+python scripts/setup_and_run.py --install --meters 50 --blocks 0,1
+```
+
+It needs a Kaggle API token at `~/.kaggle/kaggle.json` for the download step.
+Use `--skip-pull` / `--skip-download` to bypass either stage, and `--install` to
+`pip install -r requirements.txt` first. The `--quick`, `--trials`, `--meters`,
+`--blocks`, and `--row` flags are forwarded to the comparison runner.
+
 ### Open the notebook
 
 ```bash
@@ -497,6 +557,70 @@ benchmark_ckks_schemes(
     trials=3,
     configs=(DEFAULT_CKKS_CONFIGS[0],),
     export_path="quick_ckks_check.csv",
+)
+PY
+```
+
+### Run the Phase 1 HE baseline comparison
+
+This is the single command for the Phase 1 experiment. It always benchmarks the
+Paillier (PHE) baseline, and automatically adds BFV and CKKS when TenSEAL is
+installed. Results are exported under `benchmarks/results/workstation/`.
+
+```bash
+# Fast smoke run (small trial counts)
+python scripts/run_he_baseline_comparison.py --quick
+
+# Full run
+python scripts/run_he_baseline_comparison.py --trials 50
+```
+
+To drive the readings from the real multi-household **Smart Meters in London**
+dataset (`jeanmidev/smart-meters-in-london`), place the extracted dataset at
+`data/smart-meters-in-london/`. The runner uses that location automatically (it
+is the default `--london-path`), so the commands above then benchmark on real
+meters with no extra flags. If the folder is absent, the runner falls back to
+small built-in sample vectors.
+
+Download it either by extracting the Kaggle zip into that folder, e.g.:
+
+```bash
+# after extracting the Kaggle download (default name "archive (1)")
+mv "archive (1)" data/smart-meters-in-london
+```
+
+or with `kagglehub` (needs a Kaggle API token at `~/.kaggle/kaggle.json`):
+
+```python
+import kagglehub
+path = kagglehub.dataset_download("jeanmidev/smart-meters-in-london")
+print("Path to dataset files:", path)  # then point --london-path at this
+```
+
+The raw dataset is hundreds of MB and is gitignored on purpose -- it stays
+local and is never committed. The runner builds a `timestamp x meter` matrix,
+feeds a real per-meter reading vector into Paillier/BFV (scaled integer Wh) and
+CKKS (kWh floats), and runs an encrypted multi-meter aggregation correctness
+check. Control the slice with `--meters`, `--blocks`, and `--row`:
+
+```bash
+python scripts/run_he_baseline_comparison.py --meters 20 --blocks 0
+```
+
+### Quick Paillier baseline benchmark
+
+```bash
+python - <<'PY'
+from benchmarks.runner import BenchmarkRunner
+from src.fhe.paillier_scheme import benchmark_paillier_baseline
+
+runner = BenchmarkRunner()
+benchmark_paillier_baseline(
+    runner,
+    trials=10,
+    keygen_trials=2,
+    key_sizes=(2048,),
+    export_path="quick_paillier_check.csv",
 )
 PY
 ```

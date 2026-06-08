@@ -16,3 +16,11 @@ dist/
 !data/smart_grid_dataset.csv
 !benchmarks/results/workstation/.gitkeep
 !benchmarks/results/pi/.gitkeep
+
+# Local Kaggle datasets (e.g. Smart Meters in London). Keep the raw multi-
+# hundred-MB data out of git; download locally with kagglehub and point the
+# runner at it via --london-path.
+archive*/
+data/smart-meters-in-london/
+**/halfhourly_dataset/
+**/daily_dataset/

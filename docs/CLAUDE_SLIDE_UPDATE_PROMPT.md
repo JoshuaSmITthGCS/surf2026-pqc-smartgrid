@@ -48,6 +48,39 @@ What changed this week:
 6. Result CSVs were exported under:
    `benchmarks/results/workstation/`
 
+Dataset correction for the old slide deck:
+- The previous slide set had the dataset story wrong or incomplete. Fix that
+  directly in the updated deck.
+- The main dataset is NOT ETT transformer telemetry anymore, and it is NOT a
+  generic customer-behavior / social-ads dataset.
+- The main dataset is Smart Meters in London / Low Carbon London, which contains
+  household-level electricity smart-meter readings.
+- The local dataset includes:
+  - `informations_households.csv`
+  - `halfhourly_dataset/.../block_0.csv` through `block_111.csv`
+  - `hhblock_dataset/.../block_0.csv` through `block_111.csv`
+  - `daily_dataset/.../block_0.csv` through `block_111.csv`
+  - weather, holiday, and ACORN demographic context files
+- Household metadata:
+  - 5,566 household rows
+  - columns: `LCLid`, `stdorToU`, `Acorn`, `Acorn_grouped`, `file`
+  - tariff split in this local copy: 4,443 standard tariff and 1,123
+    time-of-use tariff households
+- Half-hourly meter readings:
+  - columns: `LCLid`, `tstp`, `energy(kWh/hh)`
+  - `LCLid` is the household/meter identifier
+  - `tstp` is the timestamp
+  - `energy(kWh/hh)` is the electricity consumption reading in kWh per
+    half-hour interval
+- What the HE input means:
+  - one timestamp row becomes a vector of many household meter readings
+  - for Paillier and BFV, readings are scaled from kWh to Wh integers
+  - for CKKS, readings can be treated as real-valued kWh inputs for approximate
+    analytics
+- Say plainly that ETT can still be mentioned as earlier background data for
+  transformer/load forecasting, but it should not be presented as the main
+  multi-household aggregation dataset.
+
 Important implementation note:
 - BFV needed a batching-parameter fix. The default BFV plain modulus was changed
   from `1032193` to `1146881` because batching requires
@@ -129,9 +162,10 @@ Headline findings to include:
 Required deck update:
 - Keep the old deck's title, motivation, trust model, and scheme background if
   they are still accurate.
-- Update any slide that says we only have ETT/single-transformer data. Replace
-  with the new status: Smart Meters in London is now integrated as the true
-  multi-household dataset.
+- Update any slide with the old or incorrect dataset story. Replace it with the
+  corrected Smart Meters in London description above: 5,566 households, 112
+  half-hourly block files, columns `LCLid`, `tstp`, and `energy(kWh/hh)`, and a
+  50-meter same-timestamp aggregation vector for this week's run.
 - Keep a short note that earlier ETT datasets are still useful for
   transformer/load forecasting context, but they are no longer the main
   aggregation dataset.

@@ -10,7 +10,9 @@ import tenseal as ts
 from benchmarks.runner import BenchmarkRecord, BenchmarkRunner
 
 DEFAULT_BFV_POLY_DEGREES = (4096, 8192, 16384)
-DEFAULT_BFV_PLAIN_MODULUS = 1032193
+# Batching requires plain_modulus == 1 mod 2 * poly_modulus_degree.
+# 1146881 = 35 * 32768 + 1, so it supports all default BFV degrees.
+DEFAULT_BFV_PLAIN_MODULUS = 1146881
 DEFAULT_BFV_SAMPLE_VALUES = (12, 15, 16, 19, 18, 17, 14, 13)
 
 

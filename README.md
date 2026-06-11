@@ -607,6 +607,35 @@ check. Control the slice with `--meters`, `--blocks`, and `--row`:
 python scripts/run_he_baseline_comparison.py --meters 20 --blocks 0
 ```
 
+The runner also supports the newer local SGCC electricity-theft archive and the
+derived `df.csv` feature dataframe:
+
+```bash
+# SGCC archive: 42,372 customers, daily electricity readings, theft labels.
+# The raw file is local-only at archive (2)/data.csv and is too large for git.
+python scripts/run_he_baseline_comparison.py \
+  --dataset sgcc \
+  --sgcc-path "archive (2)" \
+  --meters 50 \
+  --row 944 \
+  --trials 50
+
+# Derived df.csv: hourly building-energy electricity feature vector.
+python scripts/run_he_baseline_comparison.py \
+  --dataset df \
+  --df-path df.csv \
+  --row 0 \
+  --trials 50
+```
+
+For SGCC, the runner converts the wide `CONS_NO, FLAG, <date...>` layout into a
+`date x customer` matrix. Row `944` corresponds to `2016-08-02` in chronological
+order for the first 50 loaded customers and gives 50 live customer readings. For
+`df.csv`, the default path uses the electricity columns only; pass
+`--df-all-numeric` to include gas and other numeric features as well. Tagged
+result CSVs are exported as `he_comparison_sgcc_*.csv` and
+`he_comparison_df_*.csv`.
+
 ### Quick Paillier baseline benchmark
 
 ```bash

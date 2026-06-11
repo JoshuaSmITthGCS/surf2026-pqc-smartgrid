@@ -12,6 +12,7 @@ Examples:
     python scripts/setup_and_run.py                 # pull, download, full run
     python scripts/setup_and_run.py --quick         # fast smoke run
     python scripts/setup_and_run.py --skip-pull --meters 50 --blocks 0,1
+    python scripts/setup_and_run.py --skip-pull --dataset sgcc --row 975
     python scripts/setup_and_run.py --install        # also pip install -r requirements.txt
 
 Notes:
@@ -143,6 +144,19 @@ def main() -> int:
     )
     # Pass-through options forwarded to run_he_baseline_comparison.py.
     parser.add_argument("--quick", action="store_true", help="Fast smoke run.")
+    parser.add_argument(
+        "--dataset",
+        choices=("london", "sgcc", "df"),
+        help="Dataset source forwarded to the HE comparison runner.",
+    )
+    parser.add_argument("--sgcc-path", type=str, help="Path to SGCC archive or data.csv.")
+    parser.add_argument("--df-path", type=str, help="Path to the derived df.csv.")
+    parser.add_argument(
+        "--df-all-numeric",
+        action="store_true",
+        help="Use all numeric df.csv columns instead of electricity-only columns.",
+    )
+    parser.add_argument("--output-tag", type=str, help="Tag for output CSV filenames.")
     parser.add_argument("--trials", type=int, help="Per-operation trial count.")
     parser.add_argument("--meters", type=int, help="Max household meters to use.")
     parser.add_argument("--blocks", type=str, help="Comma-separated block indices.")
@@ -162,6 +176,16 @@ def main() -> int:
     passthrough: list[str] = []
     if args.quick:
         passthrough.append("--quick")
+    if args.dataset is not None:
+        passthrough += ["--dataset", args.dataset]
+    if args.sgcc_path is not None:
+        passthrough += ["--sgcc-path", args.sgcc_path]
+    if args.df_path is not None:
+        passthrough += ["--df-path", args.df_path]
+    if args.df_all_numeric:
+        passthrough.append("--df-all-numeric")
+    if args.output_tag is not None:
+        passthrough += ["--output-tag", args.output_tag]
     if args.trials is not None:
         passthrough += ["--trials", str(args.trials)]
     if args.meters is not None:

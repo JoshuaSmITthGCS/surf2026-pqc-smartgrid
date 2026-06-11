@@ -15,6 +15,7 @@ dist/
 *.csv
 !data/smart_grid_dataset.csv
 !benchmarks/results/workstation/.gitkeep
+!benchmarks/results/workstation/he_comparison_*.csv
 !benchmarks/results/pi/.gitkeep
 
 # Local Kaggle datasets (e.g. Smart Meters in London). Keep the raw multi-

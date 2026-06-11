@@ -6,6 +6,12 @@ that was already made. If Claude cannot read the repo directly, also attach:
 - `benchmarks/results/workstation/he_comparison_paillier.csv`
 - `benchmarks/results/workstation/he_comparison_bfv.csv`
 - `benchmarks/results/workstation/he_comparison_ckks.csv`
+- `benchmarks/results/workstation/he_comparison_sgcc_paillier.csv`
+- `benchmarks/results/workstation/he_comparison_sgcc_bfv.csv`
+- `benchmarks/results/workstation/he_comparison_sgcc_ckks.csv`
+- `benchmarks/results/workstation/he_comparison_df_paillier.csv`
+- `benchmarks/results/workstation/he_comparison_df_bfv.csv`
+- `benchmarks/results/workstation/he_comparison_df_ckks.csv`
 - `docs/HE_BASELINE_MEETING_NOTES.md`
 - `docs/SUMMER_PLAN.md`
 
@@ -28,58 +34,55 @@ Project:
   meter aggregation workloads.
 
 What changed this week:
-1. The project is now connected to a true multi-household smart-meter dataset:
-   Smart Meters in London / Low Carbon London.
-2. The dataset is local at:
-   `data/smart-meters-in-london/`
-3. The benchmark CLI ran successfully on a real 50-meter aggregation slice:
-   `python scripts/setup_and_run.py --skip-pull --skip-download --meters 50 --blocks 0,1 --row 15055 --trials 50`
-4. Dataset slice:
-   - Blocks: 0 and 1
-   - Matrix size: 50 meters x 39,247 timesteps
-   - Time range: 2011-12-03 09:00:00 to 2014-02-28 00:00:00
-   - Row used: 15055
-   - Live meters at that row: 50
-   - Aggregate cleartext total: 12.511 kWh
-5. Correctness check passed:
-   - Encrypted aggregation with Paillier decrypted to 12,511 Wh
-   - Expected plaintext total was 12,511 Wh
-   - Result: OK across 50 meters
-6. Result CSVs were exported under:
+1. The mentor wants the deck to use the new local archive and the new `df.csv`,
+   not the older incorrect dataset slide.
+2. The new archive is the SGCC electricity-theft detection dataset:
+   `archive (2)/data.csv`
+3. The new derived dataframe is:
+   `df.csv`
+4. The benchmark runner now supports both:
+   - `--dataset sgcc` for `archive (2)/data.csv`
+   - `--dataset df` for the derived `df.csv` feature matrix
+5. Both were run successfully and exported tagged result CSVs under:
    `benchmarks/results/workstation/`
 
 Dataset correction for the old slide deck:
 - The previous slide set had the dataset story wrong or incomplete. Fix that
   directly in the updated deck.
-- The main dataset is NOT ETT transformer telemetry anymore, and it is NOT a
-  generic customer-behavior / social-ads dataset.
-- The main dataset is Smart Meters in London / Low Carbon London, which contains
-  household-level electricity smart-meter readings.
-- The local dataset includes:
-  - `informations_households.csv`
-  - `halfhourly_dataset/.../block_0.csv` through `block_111.csv`
-  - `hhblock_dataset/.../block_0.csv` through `block_111.csv`
-  - `daily_dataset/.../block_0.csv` through `block_111.csv`
-  - weather, holiday, and ACORN demographic context files
-- Household metadata:
-  - 5,566 household rows
-  - columns: `LCLid`, `stdorToU`, `Acorn`, `Acorn_grouped`, `file`
-  - tariff split in this local copy: 4,443 standard tariff and 1,123
-    time-of-use tariff households
-- Half-hourly meter readings:
-  - columns: `LCLid`, `tstp`, `energy(kWh/hh)`
-  - `LCLid` is the household/meter identifier
-  - `tstp` is the timestamp
-  - `energy(kWh/hh)` is the electricity consumption reading in kWh per
-    half-hour interval
+- The main dataset for the new slides is NOT ETT transformer telemetry anymore,
+  and it is NOT the old Customer_Behaviour / social-ads dataset.
+- The main dataset is the SGCC electricity-theft archive from State Grid
+  Corporation of China:
+  - local path: `archive (2)/data.csv`
+  - source paper: "Wide and Deep Convolutional Neural Networks for
+    Electricity-Theft Detection to Secure Smart Grids"
+  - 42,372 electricity customers
+  - README says 1,035 days from 2014-01-01 to 2016-10-31; this local CSV exposes
+    1,034 dated reading columns
+  - columns: `CONS_NO`, `FLAG`, then daily date columns
+  - `CONS_NO` is customer ID
+  - `FLAG` is theft label, with this local copy containing 38,757 normal
+    customers and 3,615 theft-flagged customers
+  - date columns are daily electricity consumption readings
+- The derived `df.csv` is a separate feature dataframe:
+  - local path: `df.csv`
+  - 560,655 rows
+  - electricity feature columns used by default:
+    `Electricity:Facility [kW](Hourly)`,
+    `Fans:Electricity [kW](Hourly)`,
+    `Cooling:Electricity [kW](Hourly)`,
+    `Heating:Electricity [kW](Hourly)`,
+    `InteriorLights:Electricity [kW](Hourly)`,
+    `InteriorEquipment:Electricity [kW](Hourly)`
+  - also includes class/theft labels, but the current HE benchmark uses the
+    numeric electricity feature vector, not the classifier labels
 - What the HE input means:
-  - one timestamp row becomes a vector of many household meter readings
-  - for Paillier and BFV, readings are scaled from kWh to Wh integers
-  - for CKKS, readings can be treated as real-valued kWh inputs for approximate
-    analytics
-- Say plainly that ETT can still be mentioned as earlier background data for
-  transformer/load forecasting, but it should not be presented as the main
-  multi-household aggregation dataset.
+  - SGCC: one date row becomes a vector of customer daily consumption readings
+  - `df.csv`: one dataframe row becomes a compact electricity feature vector
+  - for Paillier and BFV, values are scaled to integers
+  - for CKKS, values are used as real-valued approximate analytics inputs
+- Smart Meters in London can be mentioned only as a previous validation dataset;
+  the newest slide update should center SGCC archive + `df.csv`.
 
 Important implementation note:
 - BFV needed a batching-parameter fix. The default BFV plain modulus was changed
@@ -89,61 +92,81 @@ Important implementation note:
   4096, 8192, and 16384.
 - Mention this as a small engineering fix, not as a major research result.
 
-Use the latest full run only:
-- The latest full run has `payload_bytes = 400`, which corresponds to 50 meter
-  readings x 8 bytes.
-- Ignore earlier smoke-test rows with `payload_bytes = 8` unless you mention
-  them as a preliminary smoke test.
+Use these latest runs:
+- SGCC command:
+  `python scripts/run_he_baseline_comparison.py --dataset sgcc --sgcc-path "archive (2)" --meters 50 --row 944 --trials 50`
+- SGCC slice:
+  - 50 customers x 1,034 daily readings
+  - date row: 944
+  - date: 2016-08-02
+  - live customers: 50
+  - aggregate cleartext total: 1,153.960 kWh
+  - encrypted aggregation check: 1,153,960 Wh decrypted == 1,153,960 Wh expected
+    [OK] across 50 customers
+- df.csv command:
+  `python scripts/run_he_baseline_comparison.py --dataset df --df-path df.csv --row 0 --trials 50`
+- df.csv slice:
+  - 6 electricity features x 560,655 rows
+  - row: 0
+  - feature-vector total: 38.401
+  - encrypted aggregation check: 38,401 Wh decrypted == 38,401 Wh expected [OK]
+    across 6 features
 
-Key benchmark results from the latest full run:
+Key SGCC benchmark results from the latest full run:
 
 Paillier baseline:
 - PHE-2048:
-  - keygen mean: 625.97 ms
-  - encrypt mean: 136.99 ms
-  - decrypt mean: 38.04 ms
-  - homomorphic add mean: 0.059 ms
-  - multiply by plaintext mean: 0.127 ms
+  - keygen mean: 375.31 ms
+  - encrypt mean: 128.05 ms
+  - decrypt mean: 32.97 ms
+  - homomorphic add mean: 0.056 ms
+  - multiply by plaintext mean: 0.116 ms
 - PHE-3072:
-  - keygen mean: 2934.86 ms
-  - encrypt mean: 439.92 ms
-  - decrypt mean: 145.36 ms
-  - homomorphic add mean: 0.690 ms
-  - multiply by plaintext mean: 0.945 ms
+  - keygen mean: 3231.57 ms
+  - encrypt mean: 397.08 ms
+  - decrypt mean: 108.78 ms
+  - homomorphic add mean: 0.110 ms
+  - multiply by plaintext mean: 0.223 ms
 
 BFV:
 - poly-4096:
-  - encrypt mean: 1.46 ms
-  - decrypt mean: 0.24 ms
-  - add mean: 0.026 ms
-  - multiply mean: 2.24 ms
+  - encrypt mean: 0.90 ms
+  - decrypt mean: 0.23 ms
+  - add mean: 0.024 ms
+  - multiply mean: 2.27 ms
 - poly-8192:
-  - encrypt mean: 2.95 ms
-  - decrypt mean: 0.96 ms
-  - add mean: 0.068 ms
-  - multiply mean: 9.85 ms
+  - encrypt mean: 2.34 ms
+  - decrypt mean: 0.84 ms
+  - add mean: 0.066 ms
+  - multiply mean: 9.25 ms
 - poly-16384:
-  - encrypt mean: 8.19 ms
-  - decrypt mean: 3.16 ms
-  - add mean: 0.288 ms
-  - multiply mean: 49.85 ms
+  - encrypt mean: 7.40 ms
+  - decrypt mean: 3.45 ms
+  - add mean: 0.266 ms
+  - multiply mean: 44.03 ms
 
 CKKS:
 - balanced-8192:
-  - encrypt mean: 3.41 ms
-  - decrypt mean: 0.85 ms
-  - add mean: 0.071 ms
-  - multiply mean: 2.15 ms
+  - encrypt mean: 2.68 ms
+  - decrypt mean: 0.74 ms
+  - add mean: 0.040 ms
+  - multiply mean: 1.91 ms
 - high-depth-16384:
-  - encrypt mean: 6.89 ms
-  - decrypt mean: 2.11 ms
-  - add mean: 0.102 ms
-  - multiply mean: 5.81 ms
+  - encrypt mean: 6.35 ms
+  - decrypt mean: 2.13 ms
+  - add mean: 0.098 ms
+  - multiply mean: 5.92 ms
+
+Also mention the `df.csv` run briefly:
+- It validates that the same runner can benchmark the derived feature dataframe.
+- It uses only 6 electricity features, so payload is 48 bytes instead of 400.
+- Correctness passed, but it is a feature-vector workload rather than the main
+  multi-customer aggregation dataset.
 
 Headline findings to include:
-1. The project moved from simulated or single-source telemetry toward a real
-   multi-household smart-meter workload.
-2. The 50-meter encrypted aggregation path works end to end.
+1. The project moved from the older incorrect dataset framing to the SGCC
+   electricity-theft archive plus the derived `df.csv`.
+2. The SGCC 50-customer encrypted aggregation path works end to end.
 3. Paillier is useful as a classic additively homomorphic baseline, but its
    encryption and key generation costs are much higher than BFV/CKKS in this
    run.
@@ -156,47 +179,46 @@ Headline findings to include:
    - approximate results require later error analysis
 6. Multiplication is the expensive operation, especially for BFV at high
    polynomial degree.
-7. The next research step is to turn this into scenario-level smart-grid
-   workloads and add analysis figures.
+7. The next research step is to use SGCC labels (`FLAG`) for scenario-level
+   theft/anomaly workloads and add analysis figures.
 
 Required deck update:
 - Keep the old deck's title, motivation, trust model, and scheme background if
   they are still accurate.
 - Update any slide with the old or incorrect dataset story. Replace it with the
-  corrected Smart Meters in London description above: 5,566 households, 112
-  half-hourly block files, columns `LCLid`, `tstp`, and `energy(kWh/hh)`, and a
-  50-meter same-timestamp aggregation vector for this week's run.
-- Keep a short note that earlier ETT datasets are still useful for
-  transformer/load forecasting context, but they are no longer the main
-  aggregation dataset.
+  corrected SGCC archive + `df.csv` description above.
+- Keep a short note that Smart Meters in London and ETT were earlier validation
+  or background datasets, but SGCC + `df.csv` are the current mentor-requested
+  datasets for this slide update.
 - Keep the baseline correction: Paillier is the HE baseline, not RSA. AES/RSA
   should be context only, not the main head-to-head baseline.
 
 Suggested slide structure:
 1. Title / project status
 2. Previous motivation recap: why HE for smart-grid privacy
-3. Updated dataset status: Smart Meters in London integrated
-4. Workload this week: 50-meter encrypted aggregation
-5. Correctness result: 12,511 Wh decrypted == 12,511 Wh expected
-6. Benchmark setup: workstation, 50 meters, 50 trials, Paillier/BFV/CKKS
+3. Dataset correction: SGCC archive + df.csv, replacing old dataset slide
+4. Workload this week: SGCC 50-customer encrypted aggregation
+5. Correctness result: 1,153,960 Wh decrypted == 1,153,960 Wh expected
+6. Benchmark setup: workstation, 50 SGCC customers, 50 trials, Paillier/BFV/CKKS
 7. Main latency table: encrypt/decrypt/add/multiply by scheme
 8. Finding 1: Paillier is the classic PHE baseline but costly to encrypt/keygen
 9. Finding 2: BFV fits exact integer aggregation
 10. Finding 3: CKKS fits approximate real-valued analytics
 11. Engineering fix: BFV batching modulus corrected
 12. Updated research status against summer plan
-13. Next steps: scenario module, notebook, figures, Week 4 report
+13. Next steps: use SGCC `FLAG` labels for theft/anomaly scenarios, notebook,
+    figures, Week 4 report
 14. Mentor questions / decisions needed
 
 For the main latency table, use a compact table with mean ms only. Include these
 rows:
-- Paillier PHE-2048: encrypt 136.99, decrypt 38.04, add 0.059, mul_plain 0.127
-- Paillier PHE-3072: encrypt 439.92, decrypt 145.36, add 0.690, mul_plain 0.945
-- BFV poly-4096: encrypt 1.46, decrypt 0.24, add 0.026, multiply 2.24
-- BFV poly-8192: encrypt 2.95, decrypt 0.96, add 0.068, multiply 9.85
-- BFV poly-16384: encrypt 8.19, decrypt 3.16, add 0.288, multiply 49.85
-- CKKS balanced-8192: encrypt 3.41, decrypt 0.85, add 0.071, multiply 2.15
-- CKKS high-depth-16384: encrypt 6.89, decrypt 2.11, add 0.102, multiply 5.81
+- Paillier PHE-2048: encrypt 128.05, decrypt 32.97, add 0.056, mul_plain 0.116
+- Paillier PHE-3072: encrypt 397.08, decrypt 108.78, add 0.110, mul_plain 0.223
+- BFV poly-4096: encrypt 0.90, decrypt 0.23, add 0.024, multiply 2.27
+- BFV poly-8192: encrypt 2.34, decrypt 0.84, add 0.066, multiply 9.25
+- BFV poly-16384: encrypt 7.40, decrypt 3.45, add 0.266, multiply 44.03
+- CKKS balanced-8192: encrypt 2.68, decrypt 0.74, add 0.040, multiply 1.91
+- CKKS high-depth-16384: encrypt 6.35, decrypt 2.13, add 0.098, multiply 5.92
 
 Speaker notes:
 - Add speaker notes to every new or modified slide.

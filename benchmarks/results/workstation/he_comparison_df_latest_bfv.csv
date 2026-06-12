@@ -1,0 +1,13 @@
+scheme,mode,key_size,payload_bytes,device,operation,mean_ms,median_ms,std_ms,p95_ms,timestamp
+BFV,poly-4096,4096,48,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,encrypt,0.972399,0.845729,0.250234,1.519052,2026-06-12T02:48:30+00:00
+BFV,poly-4096,4096,48,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,decrypt,0.235163,0.205062,0.087968,0.445289,2026-06-12T02:48:30+00:00
+BFV,poly-4096,4096,48,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,add,0.029088,0.024355,0.015413,0.056902,2026-06-12T02:48:30+00:00
+BFV,poly-4096,4096,48,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,multiply,2.375026,2.321375,0.175992,2.683598,2026-06-12T02:48:30+00:00
+BFV,poly-8192,8192,48,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,encrypt,2.189982,2.18098,0.150254,2.364365,2026-06-12T02:48:31+00:00
+BFV,poly-8192,8192,48,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,decrypt,0.749524,0.695458,0.230678,0.856131,2026-06-12T02:48:31+00:00
+BFV,poly-8192,8192,48,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,add,0.066232,0.065646,0.001607,0.069523,2026-06-12T02:48:31+00:00
+BFV,poly-8192,8192,48,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,multiply,9.279159,9.147104,0.724404,9.734694,2026-06-12T02:48:31+00:00
+BFV,poly-16384,16384,48,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,encrypt,6.958669,6.866125,0.369524,7.687658,2026-06-12T02:48:33+00:00
+BFV,poly-16384,16384,48,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,decrypt,2.938338,2.853271,0.301809,3.446427,2026-06-12T02:48:33+00:00
+BFV,poly-16384,16384,48,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,add,0.304005,0.264896,0.179466,0.341535,2026-06-12T02:48:33+00:00
+BFV,poly-16384,16384,48,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,multiply,44.148451,42.937208,5.328761,48.860144,2026-06-12T02:48:36+00:00

@@ -1,0 +1,11 @@
+scheme,mode,key_size,payload_bytes,device,operation,mean_ms,median_ms,std_ms,p95_ms,timestamp
+Paillier,PHE-2048,2048,8,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,keygen,469.894194,425.013291,150.597824,616.548592,2026-06-15T18:50:11+00:00
+Paillier,PHE-2048,2048,8,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,encrypt,125.685283,124.449042,8.21855,127.190694,2026-06-15T18:50:50+00:00
+Paillier,PHE-2048,2048,8,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,decrypt,40.337103,33.962313,17.172956,66.586569,2026-06-15T18:51:02+00:00
+Paillier,PHE-2048,2048,8,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,add,0.055763,0.054959,0.003651,0.057793,2026-06-15T18:51:02+00:00
+Paillier,PHE-2048,2048,8,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,mul_plain,0.111376,0.106791,0.014144,0.121673,2026-06-15T18:51:02+00:00
+Paillier,PHE-3072,3072,8,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,keygen,3644.224375,3452.571541,2477.851411,5936.360529,2026-06-15T18:51:13+00:00
+Paillier,PHE-3072,3072,8,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,encrypt,391.423534,384.277292,29.214418,417.236902,2026-06-15T18:53:19+00:00
+Paillier,PHE-3072,3072,8,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,decrypt,107.594579,105.501437,9.995738,117.518051,2026-06-15T18:53:51+00:00
+Paillier,PHE-3072,3072,8,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,add,0.113489,0.110333,0.00763,0.124314,2026-06-15T18:53:51+00:00
+Paillier,PHE-3072,3072,8,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,mul_plain,0.221283,0.215792,0.01463,0.248225,2026-06-15T18:53:51+00:00

@@ -1,0 +1,9 @@
+scheme,mode,key_size,payload_bytes,device,operation,mean_ms,median_ms,std_ms,p95_ms,timestamp
+CKKS,balanced-8192,8192,400,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,encrypt,2.59973,2.548646,0.593383,2.743112,2026-06-15T18:49:54+00:00
+CKKS,balanced-8192,8192,400,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,decrypt,0.711902,0.699125,0.043983,0.79659,2026-06-15T18:49:54+00:00
+CKKS,balanced-8192,8192,400,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,add,0.037302,0.035583,0.007419,0.041278,2026-06-15T18:49:54+00:00
+CKKS,balanced-8192,8192,400,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,multiply,1.85959,1.835875,0.103615,2.07546,2026-06-15T18:49:55+00:00
+CKKS,high-depth-16384,16384,400,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,encrypt,6.270001,6.2575,0.256699,6.577456,2026-06-15T18:49:57+00:00
+CKKS,high-depth-16384,16384,400,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,decrypt,2.099961,2.06273,0.14486,2.274667,2026-06-15T18:49:57+00:00
+CKKS,high-depth-16384,16384,400,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,add,0.105893,0.102875,0.013575,0.121608,2026-06-15T18:49:57+00:00
+CKKS,high-depth-16384,16384,400,Joshuas-MacBook-Pro-212.local | Darwin 25.4.0 | arm | RAM 16.0 GB | CPU 10 logical,multiply,5.910133,5.762646,0.930921,6.207431,2026-06-15T18:49:59+00:00

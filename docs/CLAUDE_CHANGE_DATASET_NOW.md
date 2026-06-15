@@ -176,6 +176,99 @@ Short slide takeaway:
 - Multiplication remains the expensive operation, especially for BFV at larger
   polynomial degrees.
 
+PASTEABLE TRIAL-SWEEP RESULTS AND CHARTS
+Use this block for the new "rate of change" / visualization slides.
+
+SGCC trial-sweep setup:
+- Dataset: SGCC electricity-theft archive (`archive (2)/data.csv`)
+- Slice: 50 customers, row 944, date 2016-08-02
+- Cleartext aggregate: 1,153.960 kWh
+- Encrypted aggregation check: 1,153,960 Wh decrypted == 1,153,960 Wh expected
+- Status: OK across 50 customers for every sweep run
+- Trial intervals: 50, 100, 150, 200, 250, and 300 trials per operation
+- Key generation remains a separate setup cost and was kept at the default
+  small trial count; the interval sweep measures repeated per-operation costs.
+
+Commands run:
+- `python scripts/run_he_baseline_comparison.py --dataset sgcc --sgcc-path "archive (2)" --meters 50 --row 944 --trials 50 --output-tag sgcc_sweep_t50`
+- Repeat the same command for `--trials 100`, `150`, `200`, `250`, and `300`
+  using output tags `sgcc_sweep_t100`, `sgcc_sweep_t150`, `sgcc_sweep_t200`,
+  `sgcc_sweep_t250`, and `sgcc_sweep_t300`.
+- Chart command:
+  `python scripts/plot_sgcc_trial_sweep.py`
+
+Generated chart files to paste into PowerPoint:
+- `benchmarks/results/workstation/plots/sgcc_trial_sweep_encrypt_mean.png`
+- `benchmarks/results/workstation/plots/sgcc_trial_sweep_encrypt_p95.png`
+- `benchmarks/results/workstation/plots/sgcc_trial_sweep_add_mean.png`
+- `benchmarks/results/workstation/plots/sgcc_trial_sweep_multiply_mean.png`
+- `benchmarks/results/workstation/plots/sgcc_300_trial_operation_bars.png`
+- `benchmarks/results/workstation/plots/sgcc_trial_sweep_rate_of_change_heatmap.png`
+- `benchmarks/results/workstation/plots/sgcc_calls_per_day_encrypt_per_payload.png`
+- `benchmarks/results/workstation/plots/sgcc_calls_per_day_add_per_payload.png`
+- `benchmarks/results/workstation/plots/sgcc_calls_per_day_encrypt_amortized.png`
+- `benchmarks/results/workstation/plots/sgcc_calls_per_day_add_amortized.png`
+- `benchmarks/results/workstation/plots/sgcc_encryption_throughput_300_trials.png`
+
+300-trial latency snapshot, mean ms and p95 ms:
+
+| Scheme | Mode | Encrypt mean | Encrypt p95 | Add mean | Add p95 | Multiply / mul_plain mean | Multiply / mul_plain p95 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Paillier | PHE-2048 | 125.685 | 127.191 | 0.056 | 0.058 | 0.111 | 0.122 |
+| Paillier | PHE-3072 | 391.424 | 417.237 | 0.113 | 0.124 | 0.221 | 0.248 |
+| BFV | poly-4096 | 0.809 | 0.894 | 0.022 | 0.024 | 2.240 | 2.380 |
+| BFV | poly-8192 | 2.222 | 2.370 | 0.067 | 0.071 | 9.092 | 9.543 |
+| CKKS | balanced-8192 | 2.565 | 2.709 | 0.036 | 0.038 | 1.837 | 1.963 |
+| CKKS | high-depth-16384 | 6.633 | 6.692 | 0.105 | 0.114 | 5.789 | 6.108 |
+
+Encryption-rate stability from 50 to 300 trials:
+
+| Scheme | Mode | 50-trial mean ms | 300-trial mean ms | Change |
+|---|---|---:|---:|---:|
+| Paillier | PHE-2048 | 125.358 | 125.685 | +0.26% |
+| Paillier | PHE-3072 | 378.293 | 391.424 | +3.47% |
+| BFV | poly-4096 | 0.805 | 0.809 | +0.45% |
+| BFV | poly-8192 | 2.161 | 2.222 | +2.79% |
+| CKKS | balanced-8192 | 2.579 | 2.565 | -0.57% |
+| CKKS | high-depth-16384 | 6.357 | 6.633 | +4.34% |
+
+Interpretation for trial-sweep slides:
+- Increasing the number of benchmark trials does not make one encrypted call
+  intrinsically slower; it mostly improves the estimate and exposes occasional
+  local machine-load spikes.
+- The useful operational rate is the per-call latency. Total daily cost scales
+  approximately linearly with the number of meter calls per house per day.
+- Paillier encryption is stable but much slower per scalar reading than the
+  RLWE-based BFV/CKKS vector workloads.
+- BFV poly-4096 gives the fastest exact integer encryption/addition in this
+  sweep. CKKS balanced-8192 is the strongest approximate real-valued option.
+
+Projected daily edge-encryption compute if one house reports multiple times per
+day, using the 300-trial mean latency:
+
+| Scheme | Mode | 24 calls/day | 96 calls/day | 288 calls/day | 1,440 calls/day |
+|---|---|---:|---:|---:|---:|
+| Paillier | PHE-2048 | 3.016 s/day | 12.066 s/day | 36.197 s/day | 180.987 s/day |
+| Paillier | PHE-3072 | 9.394 s/day | 37.577 s/day | 112.730 s/day | 563.650 s/day |
+| BFV | poly-4096 | 0.019 s/day | 0.078 s/day | 0.233 s/day | 1.164 s/day |
+| CKKS | balanced-8192 | 0.062 s/day | 0.246 s/day | 0.739 s/day | 3.693 s/day |
+
+Packing note for the daily-cost slides:
+- The table above uses per-payload cost. For Paillier, one payload is one scalar
+  reading. For BFV/CKKS, the SGCC benchmark payload packs 50 readings into one
+  vector, so the amortized per-reading cost is roughly the BFV/CKKS per-payload
+  value divided by 50 when batching is available.
+- At 1,440 calls/day, amortized edge-encryption cost is about 0.023 s/day per
+  reading for BFV poly-4096 and about 0.074 s/day per reading for CKKS
+  balanced-8192.
+
+Slide titles to add:
+- "Trial Sweep: 50 to 300 Runs"
+- "Encryption Latency Stabilizes As Trial Count Increases"
+- "Daily Call Rate Projection For One House"
+- "Per-Payload vs Packed-Vector Cost"
+- "Throughput: Encryptions Per Second At 300 Trials"
+
 SLIDE CHANGES TO MAKE
 1. Replace the old dataset slide with a new slide titled:
    "Current Dataset: SGCC Electricity-Theft Archive"

@@ -20,7 +20,7 @@ Thank you for following up, and I apologize for the late report. Here is my prog
 
 **2. Blockers**
 
-- Time was my main blocker this week. I had three midterm exams, which limited the hours I could put into the research. With midterms now finished, I expect to return to my normal pace next week.
+- Time was my main blocker this week. I had three midterm exams and was also sick for part of the week, which limited the hours I could put into the research. With midterms finished and my health improving, I expect to return to my normal pace next week.
 
 **3. Goals for Next Week**
 
@@ -30,7 +30,7 @@ Thank you for following up, and I apologize for the late report. Here is my prog
 
 **In-Person Meeting**
 
-I am available to meet in person later next week on [DAY/TIME OPTIONS, e.g., Wednesday after 2 PM or Thursday morning]. Please let me know which time works best for you, and I will come prepared to walk through my progress and the first Raspberry Pi results.
+I am available to meet in person next week on Monday (October 5), Wednesday (October 7), or Friday (October 9), any time after 11:00 AM once my 10:00-11:00 class ends. Please let me know which day and time work best for you, and I will come prepared to walk through my progress and the first Raspberry Pi results.
 
 Thank you for your support and patience.
 

@@ -126,6 +126,7 @@ def build_order_finding_circuit(
         gate = UnitaryGate(
             controlled_modmul_matrix(power, modulus, work_qubits),
             label=f"cU_{{{base}^{{2^{j}}} mod {modulus}}}",
+            check_input=False,  # provably a permutation matrix -- skip the O(dim^3) unitarity check
         )
         circuit.append(gate, [control, *work])
 

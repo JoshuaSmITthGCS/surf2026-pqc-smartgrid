@@ -39,7 +39,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.quantum.shor_real_order_finding import factor_modulus_via_quantum_order
 
 DATASET_PATH = PROJECT_ROOT / "data" / "smart_grid_dataset.csv"
-TOY_N_LENGTH_BITS = 8  # deliberately far below phe's real-world floor (see module docstring)
+TOY_N_LENGTH_BITS = 10  # deliberately far below phe's real-world floor (see module docstring)
 
 
 def load_real_reading(modulus: int) -> int:
@@ -76,8 +76,8 @@ def main() -> None:
     start = time.perf_counter()
     result = factor_modulus_via_quantum_order(
         modulus,
-        bases=(2, 3, 5, 7, 11, 13),
-        counting_qubits=14,
+        bases=(2, 3, 5, 7, 11),
+        counting_qubits=10,
         shots=2048,
     )
     elapsed = time.perf_counter() - start

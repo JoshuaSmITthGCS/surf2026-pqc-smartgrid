@@ -8,13 +8,13 @@ against `benchmarks/results/workstation/`. The Shor demo is an optional insert
 
 | Block | Slides | Time |
 |---|---|---|
-| Opening and framing | 1 to 4 | 3:15 |
+| Opening and framing | 1 to 4 | 3:35 |
 | Related work and contribution | 5, 6 | 2:45 |
-| Background, system, method | 7 to 10 | 4:30 |
+| Background, system, method | 7 to 10 | 4:45 |
 | Results | 11 to 14 | 4:45 |
-| Discussion and close | 15 to 17 | 3:15 |
-| Total without Insert A | | about 18:30 |
-| Insert A (Shor demo) | after slide 14 | 2:30 |
+| Discussion and close | 15 to 19 | 3:55 |
+| Total without Insert A | | about 19:45 |
+| Insert A (Shor demo), after slide 14 | | add 2:30, and shift the timestamps after slide 14 by that much |
 
 For a 12-minute slot: skip slide 2, speak slides 8 and 10 in one sentence each,
 skip slide 12, cut Insert A to its first two paragraphs, and skip slide 18.

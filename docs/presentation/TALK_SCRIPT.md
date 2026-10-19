@@ -9,7 +9,7 @@ trial sweep is the repeat check.
 
 Hi everyone, I'm Joshua Smith, a CS major at the College of Charleston, and this is work from my SURF project, mentored by Dr. Mohamed Baza.
 
-I started with three questions: whether homomorphic encryption works for smart-meter aggregation, whether it is worth it against a classical homomorphic baseline, and whether it can run on meter-class hardware. I'll answer the first two today. I have not measured the third yet, and I'll say where it stands.
+Published results already say lattice schemes beat Paillier, so I did not set out to repeat that. I set out to measure three things: what the switch costs a meter per day on real utility data, where the schemes diverge once multiplication enters, and what a Shor attack looks like against the exact library this design would use. Whether any of this runs on meter-class hardware is still open, and I'll say where it stands.
 
 **Slide 2: Private readings, useful totals (0:50 to 2:15)**
 
@@ -19,6 +19,8 @@ The old defense was obscurity: a private network, an undocumented protocol, and 
 
 The protocol I tested has three roles. Each meter encrypts its own reading under a public key, an aggregator adds the ciphertexts without being able to read any of them, and the utility decrypts the sum. The utility holds the secret key, so the design works only if the utility never sees individual ciphertexts. If the aggregator and utility collude, the protection ends. My threat model is an honest-but-curious aggregator that follows the protocol and tries to learn from what it sees. I leave out a malicious aggregator, integrity of the sums, and multi-key or threshold variants, and I'll return to them at the end.
 
+This matters on a long clock. Meters stay deployed for 15 to 20 years, and Paillier-based aggregation designs in the smart-metering literature would carry a factoring-based key through that window. Replacing it raises a cost question: what the replacement costs per meter per day, and what it buys. I measured that on real utility data.
+
 **Slide 3: Three schemes, one classical baseline (2:15 to 3:20)**
 
 I compared three schemes. Paillier is the baseline. It is additively homomorphic, it holds one value per ciphertext, and its security rests on the decisional composite residuosity assumption, which comes down to factoring. My key is a 2048-bit modulus, about 112 bits of classical security. BFV does exact integer arithmetic over RLWE with batching, so many values pack into one ciphertext. I run it at degree 8192 with a plaintext modulus of 1,146,881 and SEAL's default coefficient modulus, which targets 128-bit classical security. CKKS does approximate arithmetic over real numbers, also on RLWE. I run it at degree 8192 with a 60, 40, 40, 60 bit coefficient modulus and scale 2 to the 40, which gives two multiplicative levels and a small error you have to budget for.
@@ -27,7 +29,7 @@ Dr. Baza pushed me off RSA as the baseline, and he was right: RSA isn't homomorp
 
 **Slide 4: Real utility data, verified end to end (3:20 to 4:05)**
 
-The first question was whether the pipeline works on real data. I used the State Grid Corporation of China electricity-theft dataset: 42,372 customers with daily readings from January 2014 to October 2016, of whom 38,757 are normal and 3,615 are flagged for theft. I took 50 customers on August 2, 2016, scaled their readings to integers, encrypted each under Paillier, added the ciphertexts, and decrypted a total of 1,153,960 watt-hours that matched the plaintext sum.
+First I needed to know the pipeline works on real data. I used the State Grid Corporation of China electricity-theft dataset: 42,372 customers with daily readings from January 2014 to October 2016, of whom 38,757 are normal and 3,615 are flagged for theft. I took 50 customers on August 2, 2016, scaled their readings to integers, encrypted each under Paillier, added the ciphertexts, and decrypted a total of 1,153,960 watt-hours that matched the plaintext sum.
 
 That end-to-end sum check ran through Paillier. BFV and CKKS have encrypted-sum and encrypted-average demos on small sample vectors, and I benchmarked them on payloads sized from the same telemetry, but I have not yet pushed the full 50-customer total through them. BFV needs one change first. My default plaintext modulus of 1,146,881 is smaller than the 1,153,960 total, so the sum would wrap, and I need a larger modulus or a different scaling.
 
@@ -35,11 +37,11 @@ For the benchmarks, I ran 50 trials per operation on an Apple-silicon MacBook Pr
 
 **Slide 5: BFV and CKKS are about 50x faster than Paillier (4:05 to 5:20)**
 
-The second question is whether it's worth it, and speed comes first. Paillier-2048 takes about 126 milliseconds to encrypt one value. BFV at degree 8192 takes about 2.2 milliseconds and CKKS about 2.6, which puts BFV 58 times faster. Decryption takes about 33 milliseconds for Paillier and 0.7 for BFV, which is 46 times faster.
+The ranking is the expected part. What I add is the size of the gap on real payloads. Paillier-2048 takes about 126 milliseconds to encrypt one value. BFV at degree 8192 takes about 2.2 milliseconds and CKKS about 2.6, which puts BFV 58 times faster. Decryption takes about 33 milliseconds for Paillier and 0.7 for BFV, which is 46 times faster.
 
 Part of this gap comes from the implementation. Paillier runs through the Python `phe` library, which uses Python big integers unless gmpy2 is installed, and BFV and CKKS run through TenSEAL, a wrapper over C++ SEAL. A C or GMP-backed Paillier would narrow the ratio. I benchmarked the libraries a student would reach for, and I'm not claiming a pure algorithmic ratio.
 
-The 300-trial run agrees on encryption, with Paillier at 125.7 milliseconds and BFV at 2.2, a ratio of about 57. Decryption was noisier in that run: Paillier's mean rose to 40 milliseconds with a 95th percentile near 67. One Paillier encryption run at 250 trials also came in at 177 milliseconds with a standard deviation of 84. I treat single runs with caution and quote the 50-trial figures.
+The 300-trial run agrees on encryption, with Paillier at 125.7 milliseconds and BFV at 2.2, a ratio of about 57. Decryption was noisier in that run: Paillier's mean rose to 40 milliseconds with a 95th percentile near 67. I quote the 50-trial figures.
 
 The axis is linear and starts at zero, so the lattice bars look tiny, and that is the true ratio. Encryption is the number to watch, because it runs on the meter. Key size widens the gap: Paillier at 3072 bits takes about 390 milliseconds to encrypt, while BFV at degree 16384 takes about 8.
 
@@ -49,7 +51,7 @@ The per-operation ratio undersells the difference once you scale up. Paillier en
 
 My projection shows the effect over a day. A meter that reports every five minutes makes 288 encryptions a day, and Paillier-2048 spends about 36 seconds of laptop time on them. BFV at degree 8192 spends about 0.64 seconds on 288 payloads of 50 readings each. The SGCC data holds daily readings, so the five-minute rate is a projection.
 
-BFV does cost more in some places. Multiplication takes about 9 milliseconds at degree 8192 and about 45 at 16384, and CKKS multiplies in about 2 milliseconds at its balanced setting. Paillier cannot multiply two ciphertexts at all. Addition costs about the same across schemes, 0.057 milliseconds for Paillier and 0.070 for BFV, so the savings come from encryption. For summing, which is what meters need, BFV comes out ahead.
+Multiplication is where the schemes split. It takes about 9 milliseconds in BFV at degree 8192 and about 45 at 16384, while CKKS multiplies in about 2 milliseconds at its balanced setting, roughly 4.6 times cheaper than BFV at the same degree. Paillier cannot multiply two ciphertexts at all. Addition costs about the same across schemes, 0.057 milliseconds for Paillier and 0.070 for BFV, so for plain aggregation encryption is the whole cost. That gives a rule for choosing: BFV for exact sums, and CKKS once multiplication enters and approximate results are acceptable, which is the case for the depth-two demand-response work I have planned.
 
 **Slide 7: The quantum question (6:20 to 7:20)**
 
@@ -77,13 +79,13 @@ A 2048-bit modulus needs thousands of logical qubits. The 2n plus 3 rule gives 4
 
 The reason to care today is harvest now, decrypt later. Meters stay deployed for 15 to 20 years, and an attacker can store ciphertexts today and decrypt them when the hardware exists.
 
-**Slide 10: Answers, and what's left (10:40 to 12:00)**
+**Slide 10: What I add, and what's left (10:40 to 12:00)**
 
-Back to the three questions. The first was whether it works on real data. Paillier aggregated 50 SGCC customers end to end and matched the plaintext total. BFV and CKKS pass their own demos and run at telemetry-sized payloads, and the full-total check through them is the next correctness step.
+The speed ranking is known, and I'm not claiming it. I add three things. First, a per-meter-day cost on real utility payloads: at five-minute reporting, about 36 seconds of laptop time for Paillier against 0.64 seconds for batched BFV, with variance across 50 to 300 trials. Second, a rule for choosing by operation and not by name: addition costs the same everywhere, so encryption dominates plain aggregation, and multiplication is where CKKS and BFV part ways. Third, a reproducible attack against a real `phe` key, with no order handed to the circuit and a real reading decrypted at the end, which ties the quantum claim to the specific library this design would use.
 
-The second was whether it's worth it, and for BFV and CKKS the timing says yes. BFV encrypts about 58 times faster than Paillier on my stack, batching changes the cost at fleet scale, and neither scheme depends on factoring. Paillier is slower and falls to Shor.
+On correctness, Paillier aggregated 50 SGCC customers end to end and matched the plaintext total. BFV and CKKS pass their own demos and run at telemetry-sized payloads, and the full-total check through them is the next step.
 
-The third was whether it can run on smaller hardware, and I don't know yet. All my numbers come from a laptop. The ratios suggest the lattice schemes have room, but a ratio on a MacBook is a different thing from a measurement on a meter. The Raspberry Pi benchmarks come next.
+The largest open piece is the one that would matter most: whether any of this runs on a meter. All my numbers come from a laptop. The ratios suggest the lattice schemes have room, but a ratio on a MacBook is a different thing from a measurement on a meter, and I'm not aware of many published meter-class numbers for this comparison. The Raspberry Pi benchmarks are in progress.
 
 The rest of the roadmap is BGV for depth-two demand-response computations, ML-KEM for the meter-to-aggregator channel since BFV and CKKS protect the computation and leave the link open, a larger BFV plaintext modulus, ciphertext-size measurements, and a threat model that includes a malicious aggregator and integrity of the aggregate.
 
@@ -101,3 +103,4 @@ Thank you to Dr. Baza, LS-STAR and the Honors College. I'm happy to take questio
 | CKKS noise and IND-CPA-D? | CKKS decryptions can leak noise information. I use it as the analytics scheme with an error budget and did not model that attack. |
 | Why not ML-KEM now? | It protects the channel and not the computation. It is on the roadmap for the meter link. |
 | Malicious aggregator or colluding utility? | Out of scope. Single-key design, honest-but-curious aggregator only. |
+| What is actually new? | The speed ranking is expected. I add the per-meter-day cost on real SGCC payloads with variance, the operation-level rule (encryption dominates aggregation, CKKS multiplies about 4.6x cheaper than BFV at degree 8192), and an end-to-end Shor run against a real `phe` key. Meter-class numbers are the open piece. |
